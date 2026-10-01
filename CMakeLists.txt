@@ -14,6 +14,7 @@ add_executable(YTDLnis WIN32
 )
 
 target_compile_definitions(YTDLnis PRIVATE UNICODE _UNICODE NOMINMAX WIN32_LEAN_AND_MEAN)
+target_include_directories(YTDLnis PRIVATE ${PROJECT_SOURCE_DIR}/src)
 
 target_link_libraries(YTDLnis PRIVATE
     user32
@@ -25,3 +26,5 @@ target_link_libraries(YTDLnis PRIVATE
     dwrite
     windowscodecs
 )
+
+add_subdirectory(tests)
