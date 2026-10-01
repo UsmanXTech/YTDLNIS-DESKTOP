@@ -12,6 +12,7 @@ add_executable(YTDLnis WIN32
  src/process/ProcessController.cpp
  src/ytdl/CommandBuilder.cpp
  src/runtime/RuntimeManager.cpp
+ src/runtime/RuntimeDiagnostics.cpp
 )
 target_compile_definitions(YTDLnis PRIVATE UNICODE _UNICODE NOMINMAX WIN32_LEAN_AND_MEAN)
 target_include_directories(YTDLnis PRIVATE ${PROJECT_SOURCE_DIR}/src)
