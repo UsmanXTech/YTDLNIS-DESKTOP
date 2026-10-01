@@ -11,6 +11,8 @@ add_executable(YTDLnis WIN32
  src/process/CommandLine.cpp
  src/process/ProcessController.cpp
  src/ytdl/CommandBuilder.cpp
+ src/ytdl/YtdlEngine.cpp
+ src/ytdl/ProgressParser.cpp
  src/runtime/RuntimeManager.cpp
  src/runtime/RuntimeDiagnostics.cpp
 )
