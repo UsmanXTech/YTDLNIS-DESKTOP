@@ -10,16 +10,16 @@ std::vector<std::wstring> CommandBuilder::build(const YtdlRequest& request,
     if (request.url.empty()) throw std::invalid_argument("URL is required");
 
     std::vector<std::wstring> args;
-    args.reserve(24 + request.extraArguments.size());
+    args.reserve(40 + request.extraArguments.size());
+
+    args.emplace_back(L"--no-color");
+    args.emplace_back(L"--newline");
+    args.emplace_back(L"--progress");
 
     if (!runtime.ffmpeg.empty()) {
         args.emplace_back(L"--ffmpeg-location");
         args.push_back(runtime.ffmpeg.parent_path().wstring());
     }
-
-    args.emplace_back(L"--no-color");
-    args.emplace_back(L"--newline");
-    args.emplace_back(L"--progress");
 
     if (!request.playlist) args.emplace_back(L"--no-playlist");
 
@@ -34,12 +34,21 @@ std::vector<std::wstring> CommandBuilder::build(const YtdlRequest& request,
             args.emplace_back(L"--audio-quality");
             args.push_back(std::to_wstring(*request.audio.quality));
         }
+        if (request.audio.codec) {
+            args.emplace_back(L"--postprocessor-args");
+            args.push_back(L"ExtractAudio:-c:a " + *request.audio.codec);
+        }
         break;
     case DownloadType::Data:
         args.emplace_back(L"--dump-single-json");
+        args.emplace_back(L"--skip-download");
         break;
     case DownloadType::Custom:
     case DownloadType::Video:
+        if (request.video.height) {
+            args.emplace_back(L"--format");
+            args.push_back(L"bestvideo[height<=" + std::to_wstring(*request.video.height) + L"]+bestaudio/best");
+        }
         break;
     }
 
@@ -67,13 +76,17 @@ std::vector<std::wstring> CommandBuilder::build(const YtdlRequest& request,
         if (!request.subtitles.languages.empty()) {
             args.emplace_back(L"--sub-langs");
             std::wstring languages;
-            for (size_t i = 0; i < request.subtitles.languages.size(); ++i) {
+            for (std::size_t i = 0; i < request.subtitles.languages.size(); ++i) {
                 if (i) languages += L',';
                 languages += request.subtitles.languages[i];
             }
             args.push_back(std::move(languages));
         }
         if (request.subtitles.embed) args.emplace_back(L"--embed-subs");
+        if (request.subtitles.convertToVtt) {
+            args.emplace_back(L"--convert-subs");
+            args.emplace_back(L"vtt");
+        }
     }
 
     if (request.cookieFile) {
@@ -97,7 +110,6 @@ std::vector<std::wstring> CommandBuilder::build(const YtdlRequest& request,
     }
 
     for (const auto& extra : request.extraArguments) args.push_back(extra);
-
     args.push_back(request.url);
     return args;
 }
