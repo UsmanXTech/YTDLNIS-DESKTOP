@@ -3,6 +3,7 @@
 
 #include <atomic>
 #include <mutex>
+#include <string>
 #include <thread>
 #include <utility>
 
@@ -27,7 +28,8 @@ bool createPipe(HANDLE& readHandle, HANDLE& writeHandle) {
 }
 
 std::wstring decodeChunk(const char* data, DWORD size) {
-    int n = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, data, static_cast<int>(size), nullptr, 0);
+    int n = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, data,
+                                static_cast<int>(size), nullptr, 0);
     UINT cp = CP_UTF8;
     DWORD flags = MB_ERR_INVALID_CHARS;
     if (n <= 0) {
@@ -128,10 +130,24 @@ bool ProcessController::start(const ProcessSpec& spec, OutputCallback callback) 
     auto readPipe = [this](HANDLE pipe, bool isStdErr) {
         char buffer[8192];
         DWORD bytes = 0;
+        std::wstring pending;
         while (ReadFile(pipe, buffer, sizeof(buffer), &bytes, nullptr) && bytes != 0) {
             auto text = decodeChunk(buffer, bytes);
-            if (state_->callback && !text.empty()) state_->callback(isStdErr, text);
+            if (text.empty()) continue;
+            pending += text;
+
+            std::size_t start = 0;
+            for (std::size_t i = 0; i < pending.size(); ++i) {
+                if (pending[i] != L'\r' && pending[i] != L'\n') continue;
+                if (i > start && state_->callback)
+                    state_->callback(isStdErr, pending.substr(start, i - start));
+                if (pending[i] == L'\r' && i + 1 < pending.size() && pending[i + 1] == L'\n') ++i;
+                start = i + 1;
+            }
+            if (start != 0) pending.erase(0, start);
         }
+        if (!pending.empty() && state_->callback)
+            state_->callback(isStdErr, std::move(pending));
     };
     state_->stdoutReader = std::thread(readPipe, state_->stdoutRead, false);
     state_->stderrReader = std::thread(readPipe, state_->stderrRead, true);
