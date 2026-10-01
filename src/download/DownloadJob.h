@@ -12,7 +12,8 @@ struct DownloadJobSnapshot { std::uint64_t id=0; JobState state=JobState::Queued
 class DownloadJob {
 public:
  using UpdateCallback=std::function<void(const DownloadJobSnapshot&)>;
- DownloadJob(std::uint64_t id, ytdl::YtdlRequest request, ytdl::runtime::RuntimeManager& runtime, UpdateCallback callback={});
+ using CompletionCallback=std::function<void(std::uint64_t)>;
+ DownloadJob(std::uint64_t id, ytdl::YtdlRequest request, ytdl::runtime::RuntimeManager& runtime, UpdateCallback callback={}, CompletionCallback completion={});
  ~DownloadJob();
  DownloadJob(const DownloadJob&)=delete;
  DownloadJob& operator=(const DownloadJob&)=delete;
@@ -20,7 +21,8 @@ public:
  void cancel();
  DownloadJobSnapshot snapshot() const;
 private:
- std::uint64_t id_; ytdl::YtdlRequest request_; ytdl::runtime::RuntimeManager& runtime_; UpdateCallback callback_;
+ void publish();
+ std::uint64_t id_; ytdl::YtdlRequest request_; ytdl::runtime::RuntimeManager& runtime_; UpdateCallback callback_; CompletionCallback completion_;
  mutable std::mutex mutex_; DownloadJobSnapshot snapshot_; std::unique_ptr<ytdl::YtdlEngine> engine_; std::thread worker_;
 };
 }
