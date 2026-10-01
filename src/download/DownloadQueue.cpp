@@ -10,7 +10,8 @@ DownloadQueue::DownloadQueue(ytdl::runtime::RuntimeManager& runtime, std::size_t
 std::uint64_t DownloadQueue::enqueue(ytdl::YtdlRequest request, DownloadJob::UpdateCallback callback) {
     std::lock_guard lock(mutex_);
     const auto id = nextId_++;
-    jobs_.push_back(std::make_unique<DownloadJob>(id, std::move(request), runtime_, std::move(callback)));
+    auto completion = [this](std::uint64_t completedId) { onJobComplete(completedId); };
+    jobs_.push_back(std::make_unique<DownloadJob>(id, std::move(request), runtime_, std::move(callback), std::move(completion)));
     pump();
     return id;
 }
@@ -18,10 +19,7 @@ std::uint64_t DownloadQueue::enqueue(ytdl::YtdlRequest request, DownloadJob::Upd
 void DownloadQueue::cancel(std::uint64_t id) {
     std::lock_guard lock(mutex_);
     for (auto& job : jobs_) {
-        if (job->snapshot().id == id) {
-            job->cancel();
-            break;
-        }
+        if (job->snapshot().id == id) { job->cancel(); break; }
     }
     pump();
 }
@@ -32,6 +30,11 @@ std::vector<DownloadJobSnapshot> DownloadQueue::snapshots() const {
     result.reserve(jobs_.size());
     for (const auto& job : jobs_) result.push_back(job->snapshot());
     return result;
+}
+
+void DownloadQueue::onJobComplete(std::uint64_t) {
+    std::lock_guard lock(mutex_);
+    pump();
 }
 
 void DownloadQueue::pump() {
