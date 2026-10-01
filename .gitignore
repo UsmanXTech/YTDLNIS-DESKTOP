@@ -1,0 +1,10 @@
+build/
+.vs/
+*.user
+*.suo
+out/
+install/
+*.db
+*.db-shm
+*.db-wal
+*.log
