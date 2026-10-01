@@ -13,6 +13,7 @@ public:
  std::vector<DownloadJobSnapshot> snapshots() const;
 private:
  void pump();
+ void onJobComplete(std::uint64_t id);
  ytdl::runtime::RuntimeManager& runtime_;
  std::size_t concurrency_;
  std::uint64_t nextId_=1;
