@@ -11,6 +11,8 @@ endif()
 
 add_executable(YTDLnis WIN32
     src/app/main.cpp
+    src/process/CommandLine.cpp
+    src/process/ProcessController.cpp
 )
 
 target_compile_definitions(YTDLnis PRIVATE UNICODE _UNICODE NOMINMAX WIN32_LEAN_AND_MEAN)
